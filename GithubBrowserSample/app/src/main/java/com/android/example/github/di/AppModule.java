@@ -16,6 +16,10 @@
 
 package com.android.example.github.di;
 
+import android.app.Application;
+import android.arch.lifecycle.ViewModelProvider;
+import android.arch.persistence.room.Room;
+
 import com.android.example.github.api.GithubService;
 import com.android.example.github.db.GithubDb;
 import com.android.example.github.db.RepoDao;
@@ -23,14 +27,12 @@ import com.android.example.github.db.UserDao;
 import com.android.example.github.util.LiveDataCallAdapterFactory;
 import com.android.example.github.viewmodel.GithubViewModelFactory;
 
-import android.app.Application;
-import android.arch.lifecycle.ViewModelProvider;
-import android.arch.persistence.room.Room;
-
 import javax.inject.Singleton;
 
 import dagger.Module;
 import dagger.Provides;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -42,6 +44,17 @@ class AppModule {
                 .baseUrl("https://api.github.com/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(new LiveDataCallAdapterFactory())
+                .client(
+                        new OkHttpClient.Builder()
+                        .addNetworkInterceptor(chain -> {
+                            Request request =
+                                    chain.request()
+                                            .newBuilder()
+                                            .header("Connection", "close")
+                                            .build();
+                           return chain.proceed(request);
+                        }).build()
+                )
                 .build()
                 .create(GithubService.class);
     }
